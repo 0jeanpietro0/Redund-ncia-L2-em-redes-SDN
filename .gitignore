@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Configurações locais e segredos
+.env
+.env.*
+*.pem
+*.key
+
+# Logs, capturas e resultados brutos
+*.log
+*.pcap
+*.pcapng
+results/raw/*
+!results/raw/.gitkeep
+
+# Artefatos de máquinas virtuais: publicar somente em Releases
+*.ova
+*.ovf
+*.vdi
+*.vmdk
+*.vhd
+*.vbox
+vm/assets/*
+!vm/assets/.gitkeep
+
+# Sistema/editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
