@@ -14,21 +14,25 @@ venv/
 *.log
 *.pcap
 *.pcapng
-results/raw/*
-!results/raw/.gitkeep
+reproducao/resultados/brutos/*
+!reproducao/resultados/brutos/.gitkeep
 
-# Artefatos de máquinas virtuais: publicar somente em Releases
+# Máquinas virtuais: publicar somente como ativo de uma GitHub Release
 *.ova
 *.ovf
 *.vdi
 *.vmdk
 *.vhd
 *.vbox
-vm/assets/*
-!vm/assets/.gitkeep
+reproducao/maquina_virtual/arquivos/*
+!reproducao/maquina_virtual/arquivos/.gitkeep
 
-# Sistema/editor
+# Arquivos temporários de ferramentas e editores
 .DS_Store
 Thumbs.db
 .idea/
 .vscode/
+
+# Saídas temporárias dos testes
+*.tmp
+*.pid

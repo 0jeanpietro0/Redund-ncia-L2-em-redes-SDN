@@ -1,103 +1,138 @@
-# ARP Proxy com SDN
+# Redundância L2 em redes SDN com ARP Proxy
 
-Repositório de apoio ao TCC sobre uma implementação de ARP Proxy centralizado em uma rede definida por software (SDN), utilizando Ryu, OpenFlow 1.3, Open vSwitch e Mininet.
+Este repositório reúne o código, as topologias, os roteiros de teste e os materiais de reprodução do TCC sobre o uso de um **ARP Proxy controlado por SDN** para evitar a propagação indiscriminada de ARP em redes de camada 2 com caminhos redundantes.
 
-O controlador aprende a associação entre IP, MAC, switch e porta dos hosts, responde a solicitações ARP quando o destino já é conhecido, limita a descoberta de destinos desconhecidos às portas de borda e instala caminhos IPv4 calculados pelo controlador.
+A implementação utiliza **Ryu**, **OpenFlow 1.3**, **Open vSwitch** e **Mininet**. O controlador aprende a associação entre IP, MAC, switch e porta dos hosts, responde às solicitações ARP quando o destino já é conhecido e instala os fluxos IPv4 calculados para o caminho selecionado.
 
-> **Estado atual:** esta primeira organização usa exatamente os arquivos recebidos como `v3`. A versão `v3.6`, as topologias finais convencional e redundante e a máquina virtual OVA ainda precisam ser adicionadas antes de marcar uma versão final reproduzível.
+> **Estado do repositório:** o snapshot atualmente disponível contém o controlador `v3` e a topologia SDN de 1 switch com 4 hosts. Os arquivos finais usados nos testes de redundância (`v3.6`, `v3.7`, topologias em anel, cenários STP/RSTP e malha K4) ainda precisam ser adicionados. Consulte [ESTADO_DOS_ARTEFATOS.md](ESTADO_DOS_ARTEFATOS.md) antes de tentar reproduzir todo o TCC.
+
+## Comece por aqui
+
+| Objetivo | Documento |
+|---|---|
+| Entender o que já está disponível | [Estado dos artefatos](ESTADO_DOS_ARTEFATOS.md) |
+| Reproduzir com a máquina virtual | [Guia de reprodução](reproducao/README.md) |
+| Preparar e publicar a OVA | [Máquina virtual](reproducao/maquina_virtual/README.md) |
+| Executar os ensaios | [Índice de testes](testes/README.md) |
+| Organizar logs e resultados | [Resultados](reproducao/resultados/README.md) |
+| Conferir a origem dos arquivos | [Manifesto de arquivos](documentacao/MANIFESTO_DE_ARQUIVOS.md) |
 
 ## Estrutura
 
-| Caminho | Conteúdo |
-|---|---|
-| `controller/` | Aplicações do controlador Ryu |
-| `topologies/` | Scripts de topologia Mininet/Mininet-WiFi |
-| `docs/development/` | Documentos históricos do desenvolvimento |
-| `docs/references/` | Referências acadêmicas recebidas, sujeitas à revisão de redistribuição |
-| `environment/` | Inventário e instruções do ambiente experimental |
-| `results/` | Modelo para logs, capturas e resultados dos ensaios |
-| `scripts/` | Inicialização, verificação, limpeza e preparação da OVA |
-| `vm/` | Instruções da máquina virtual; a OVA será distribuída por uma Release |
+```text
+.
+├── documentacao/                 # TCC, referências, figuras e histórico do desenvolvimento
+├── reproducao/
+│   ├── ambiente/                 # Inventário das versões do laboratório
+│   ├── codigo/
+│   │   ├── controlador/          # Aplicações Ryu
+│   │   └── topologias/           # Cenários Mininet/OVS
+│   ├── maquina_virtual/          # Instruções e área local para a OVA
+│   └── resultados/               # Evidências brutas e resultados consolidados
+├── testes/                       # Passo a passo de cada ensaio
+└── utilitarios/                  # Verificação, execução, coleta e limpeza
+```
 
-## Cenário disponível
+Os nomes dos diretórios e toda a documentação de apoio estão em português. Nomes próprios de tecnologias e comandos, como `OpenFlow`, `Packet-In`, `ping`, `tcpdump` e `iperf`, foram mantidos por serem termos técnicos.
 
-A topologia atualmente versionada contém um switch Open vSwitch e quatro hosts na rede `10.0.0.0/24`:
+## Reprodução rápida do cenário disponível
 
-| Host | IPv4 |
-|---|---|
-| `h1` | `10.0.0.1/24` |
-| `h2` | `10.0.0.2/24` |
-| `h3` | `10.0.0.3/24` |
-| `h4` | `10.0.0.4/24` |
+### Pré-requisitos
 
-Esse cenário é útil para validar aprendizado de hosts, resposta ARP e instalação de fluxos. Como possui apenas um switch, ele **não comprova sozinho** a contenção de flooding em enlaces redundantes; isso depende da inclusão e execução da topologia cíclica final.
+- Linux compatível ou a OVA do projeto;
+- Python 3;
+- Ryu;
+- Mininet;
+- Open vSwitch com OpenFlow 1.3;
+- permissões de `sudo` para criar e limpar a rede emulada.
 
-## Execução rápida
-
-Em uma máquina com Ryu, Mininet e Open vSwitch instalados:
+### Execução
 
 1. Verifique o ambiente:
 
    ```bash
-   ./scripts/preflight.sh
+   ./utilitarios/verificar-ambiente.sh
    ```
 
-2. Em um terminal, inicie o controlador:
+2. Limpe resíduos de execuções anteriores:
 
    ```bash
-   ./scripts/run-controller.sh
+   ./utilitarios/limpar-mininet.sh
    ```
 
-3. Em outro terminal, inicie a topologia:
+3. No primeiro terminal, inicie o controlador:
 
    ```bash
-   ./scripts/run-topology.sh
+   ./utilitarios/executar-controlador.sh
    ```
 
-4. No prompt do Mininet, execute testes básicos:
+4. No segundo terminal, inicie a topologia:
+
+   ```bash
+   ./utilitarios/executar-topologia.sh
+   ```
+
+5. No prompt do Mininet, execute:
 
    ```text
    mininet> pingall
    mininet> h1 ping -c 20 10.0.0.3
+   mininet> h3 ping -c 20 10.0.0.1
    mininet> sh ovs-ofctl -O OpenFlow13 dump-flows s1
    ```
 
-5. Ao terminar, saia do Mininet e limpe o ambiente:
+6. Ao terminar, saia da CLI e limpe o ambiente:
 
    ```bash
-   ./scripts/cleanup-mininet.sh
+   ./utilitarios/limpar-mininet.sh
    ```
 
-O controlador e a topologia usam OpenFlow 1.3 e a conexão remota em `127.0.0.1:6633`.
+O controlador e a topologia disponíveis usam OpenFlow 1.3 e conexão com o Ryu em `127.0.0.1:6633`. O roteiro completo está em [01 — Validação SDN com 1 switch e 4 hosts](testes/01-validacao-sdn-1-switch-4-hosts.md).
 
-## Reprodução por máquina virtual
+## Conjunto de testes documentado
 
-A forma principal de reprodução será uma OVA já configurada. Ela não deve entrar no histórico normal do Git, pois arquivos comuns acima de 100 MiB são bloqueados pelo GitHub. A OVA será anexada a uma **GitHub Release**, acompanhada de checksum SHA-256 e do inventário de versões do ambiente.
+| Nº | Cenário | Finalidade |
+|---:|---|---|
+| 00 | Preparação | Fixar versões, limpar o ambiente e criar a pasta da execução |
+| 01 | SDN, 1 switch e 4 hosts | Validar ARP, conectividade e instalação de fluxos |
+| 02 | Convencional, 1 switch e 4 hosts | Criar a referência sem controlador |
+| 03 | Anel convencional sem STP | Demonstrar loop L2 e tempestade de broadcast com limites de segurança |
+| 04 | Anel com STP e RSTP | Identificar portas bloqueadas e validar conectividade |
+| 05 | Anel SDN | Verificar contenção de ARP nos enlaces internos |
+| 06 | Falha de enlace | Comparar reconvergência de STP, RSTP e SDN |
+| 07 | Ping a cada 5 ms | Comparar perda durante a falha sob maior frequência |
+| 08 | Malha completa K4 | Avaliar redundância, portas bloqueadas e fluxos `iperf` paralelos |
+| 09 | Encerramento | Consolidar evidências, métricas, conclusão e limitações |
 
-Se a OVA superar o limite individual da Release, o script abaixo gera partes menores e os respectivos checksums:
+Veja os comandos, a ordem de execução e os critérios de registro em [testes/README.md](testes/README.md).
 
-```bash
-./scripts/prepare-ova-release.sh /caminho/arp-proxy-sdn-lab.ova
-```
+## Onde adicionar os arquivos finais
 
-Consulte [`vm/README.md`](vm/README.md) antes de exportar ou publicar a máquina.
+- Controladores Ryu: `reproducao/codigo/controlador/`;
+- topologias Mininet: `reproducao/codigo/topologias/`;
+- versão final do TCC: `documentacao/tcc/`;
+- figuras das topologias: `documentacao/figuras/`;
+- resultados pequenos e consolidados: `reproducao/resultados/consolidados/`;
+- logs e capturas locais: `reproducao/resultados/brutos/`;
+- OVA: preparar em `reproducao/maquina_virtual/arquivos/` e publicar como ativo de uma [GitHub Release](https://github.com/0sardinha0/Redund-ncia-L2-em-redes-SDN/releases).
 
-## Método de teste
+A OVA, discos virtuais, logs e capturas grandes são ignorados pelo Git para não aumentar o histórico do repositório. O arquivo da VM deve ser distribuído pela Release com checksum SHA-256.
 
-O roteiro completo está em [`docs/TEST_PLAN.md`](docs/TEST_PLAN.md). Cada execução deve preservar:
+## Limites do trabalho
 
-- versão do controlador e da topologia;
-- inventário de SO, Python, Ryu, Mininet e Open vSwitch;
-- comandos executados;
-- logs do controlador;
-- fluxos OpenFlow;
-- capturas `tcpdump`, quando aplicável;
-- resultados brutos e síntese da análise.
+- A solução cria condições para uso futuro de engenharia de tráfego e múltiplos caminhos, mas **não implementa balanceamento de carga**.
+- O LLDP usado por `--observe-links` é tráfego de controle local aos enlaces; ele não equivale a flooding ARP.
+- Os resultados devem ser descritos como válidos para os cenários efetivamente testados, com endereçamento IPv4 estático.
+- DHCP exige tratamento próprio por utilizar broadcast e não faz parte da implementação atual.
 
-## Integridade e proveniência
+## Integridade e atualização
 
-Os hashes dos arquivos recebidos e seus destinos estão em [`docs/SOURCE_MANIFEST.md`](docs/SOURCE_MANIFEST.md). Arquivos históricos foram preservados sem alteração; a validação sintática dos dois scripts Python recebidos foi concluída com sucesso.
+Ao adicionar um artefato final:
 
-## Licença e referências
+1. atualize [ESTADO_DOS_ARTEFATOS.md](ESTADO_DOS_ARTEFATOS.md);
+2. registre a alteração em [HISTORICO_DE_ALTERACOES.md](HISTORICO_DE_ALTERACOES.md);
+3. calcule o SHA-256 e atualize o [manifesto](documentacao/MANIFESTO_DE_ARQUIVOS.md);
+4. ajuste o roteiro de teste para apontar ao nome real do arquivo;
+5. execute a validação em uma VM limpa antes de criar uma versão final.
 
-A licença do código ainda precisa ser escolhida pelo autor. Os documentos de terceiros permanecem sujeitos aos direitos e às condições de distribuição de suas fontes originais. Antes de tornar o repositório público, esses materiais devem ser revisados e, quando necessário, substituídos por links oficiais.
+Os documentos de terceiros permanecem sujeitos aos direitos e às condições de distribuição de suas fontes. Antes de tornar o repositório público, revise esses materiais e substitua por links oficiais quando necessário.
