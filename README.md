@@ -163,6 +163,3 @@ As instruções para baixar, verificar, extrair e importar no VirtualBox estão 
 - Dependência do controlador e da sinalização OpenFlow para recomposição dos caminhos.
 - DHCP redundante, Proxy ARP clássico entre sub-redes e políticas de balanceamento permanecem como trabalhos futuros independentes.
 
-## Licença e referências
-
-A licença do código ainda deve ser definida pelos autores antes da abertura pública do repositório. Os materiais de terceiros em `docs/references/` continuam sujeitos aos direitos e condições de distribuição de suas fontes originais.
