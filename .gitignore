@@ -10,24 +10,27 @@ venv/
 *.pem
 *.key
 
-# Logs, capturas e resultados brutos
+# Evidências geradas durante os testes
 *.log
 *.pcap
 *.pcapng
-results/raw/*
-!results/raw/.gitkeep
+resultados-locais/
+evidencias-locais/
 
-# Artefatos de máquinas virtuais: publicar somente em Releases
+# Máquinas virtuais e ativos grandes: publicar somente em Releases
 *.ova
 *.ovf
 *.vdi
 *.vmdk
 *.vhd
 *.vbox
+*.7z.???
+*.part
+release-assets/
 vm/assets/*
 !vm/assets/.gitkeep
 
-# Sistema/editor
+# Sistema e editores
 .DS_Store
 Thumbs.db
 .idea/

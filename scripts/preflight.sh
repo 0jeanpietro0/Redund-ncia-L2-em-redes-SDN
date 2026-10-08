@@ -4,7 +4,7 @@ set -euo pipefail
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 repo_dir="$(cd -- "${script_dir}/.." && pwd)"
 
-required_commands=(python3 ryu-manager mn ovs-vsctl ovs-ofctl)
+required_commands=(python3 ryu-manager mn ovs-vsctl ovs-ofctl tcpdump iperf git)
 missing=0
 
 for command_name in "${required_commands[@]}"; do
@@ -16,14 +16,28 @@ for command_name in "${required_commands[@]}"; do
     fi
 done
 
-python3 -m py_compile \
-    "${repo_dir}/controller/arp_proxy_v3.py" \
-    "${repo_dir}/topologies/topologia_arp_proxy_v3.py"
-printf '[OK] Sintaxe dos scripts Python\n'
+mapfile -d '' python_files < <(
+    find "${repo_dir}/controller" "${repo_dir}/topologies" \
+        -type f -name '*.py' -print0 | sort -z
+)
 
-if [[ "${missing}" -ne 0 ]]; then
-    printf 'O ambiente ainda não contém todos os comandos necessários.\n' >&2
+if [[ "${#python_files[@]}" -eq 0 ]]; then
+    printf 'Nenhum arquivo Python foi encontrado.\n' >&2
     exit 1
 fi
 
-printf 'Preflight concluído.\n'
+python3 -m py_compile "${python_files[@]}"
+printf '[OK] Sintaxe de %d arquivos Python\n' "${#python_files[@]}"
+
+if command -v VBoxManage >/dev/null 2>&1; then
+    printf '[OK] VBoxManage\n'
+else
+    printf '[AVISO] VBoxManage não está disponível; necessário apenas para a VM.\n'
+fi
+
+if [[ "${missing}" -ne 0 ]]; then
+    printf 'O ambiente não contém todos os comandos necessários para os testes.\n' >&2
+    exit 1
+fi
+
+printf 'Verificação concluída.\n'
